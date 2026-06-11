@@ -55,3 +55,42 @@ tabla-menu {
 }
     background-color: #0AAAF7; /* Cambia al azul brillante */
 }
+/* === ESTILO PARA LA TABLA DE EVIDENCIAS (ROBÓTICA) === */
+table {
+    width: 85%;                 /* Hace que la tabla abarque buena parte de la pantalla */
+    margin: 30px auto;          /* Centra la tabla y la separa de los elementos de arriba */
+    background-color: white;    /* Evita que sea transparente; ahora tendrá fondo blanco limpio */
+    border-collapse: collapse;  /* Une las líneas de los bordes para que se vea profesional */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); /* Le da una sombra muy suave y moderna */
+}
+
+/* Estilo para los títulos de la tabla (Evento, Día, Descripción) */
+table th {
+    background-color: #003366;  /* El mismo azul oscuro de tu menú */
+    color: white;               /* Texto blanco para que resalte */
+    padding: 12px;
+    font-size: 16px;
+    border: 1px solid #002244;  /* Borde oscuro para definir las celdas de arriba */
+}
+
+/* Estilo para las celdas de contenido (Donde van las fotos y los textos) */
+table td {
+    padding: 15px;
+    color: #333333;             /* Texto gris oscuro, más fácil de leer que el negro puro */
+    border: 1px solid #dddddd;  /* Pone las líneas divisorias grises que le faltaban */
+    vertical-align: middle;     /* Centra el texto y las imágenes verticalmente */
+}
+
+/* Control para las imágenes de evidencia dentro de la tabla */
+table td img {
+    width: 120px;               /* Controla el tamaño de la foto para que no estire la tabla */
+    height: auto;               /* Mantiene la proporción original de la foto */
+    border-radius: 5px;         /* Redondea un poquito las esquinas de tus fotos */
+    display: block;
+    margin: 0 auto;             /* Centra la imagen dentro de su celda */
+}
+
+/* Opcional: Hace que las filas intercaladas tengan un fondo gris muy clarito */
+table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
