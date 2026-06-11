@@ -19,32 +19,39 @@ img {
     border-radius: 10px;
 }
 
-/* === ESTILO DE LA TABLA QUE ACTÚA COMO MENÚ === */
-.tabla-menu {
-    margin: 20px auto;       /* Centra la tabla en la pantalla */
-    border-collapse: separate; /* Permite separar las celdas para que parezcan botones sueltos */
-    border-spacing: 15px;    /* Espacio entre cada botón */
+tabla-menu {
+    margin: 20px auto;         /* Centra la barra en la pantalla */
+    border-collapse: separate; 
+    border-spacing: 8px;       /* Espacio entre cada pestaña */
+    background-color: #003366; /* Fondo azul oscuro para toda la barra */
+    padding: 10px;
+    border-radius: 8px;
+    width: 95%;                /* Ocupa casi todo el ancho de la pantalla */
 }
 
-/* Cada celda de la tabla se convierte en un botón azul */
+/* Cada celda se comporta como una pestaña */
 .tabla-menu td {
-    background-color: #003366; /* Tu azul oscuro */
-    border-radius: 8px;        /* Esquinas redondeadas suaves */
-    width: 220px;              /* Ancho fijo para que todas las celdas midan igual */
-    height: 50px;              /* Alto del botón */
-    vertical-align: middle;    /* Centra el texto verticalmente */
+    background-color: #1a4d80; /* Un azul un poco más claro para que resalten los botones */
+    border-radius: 5px;        
+    height: 40px;              /* Alto de la barra */
+    vertical-align: middle;    
 }
 
-/* Estilo del texto de los enlaces dentro de la tabla */
+/* Estilo del texto */
 .tabla-menu td a {
     color: white;
     text-decoration: none;
     font-weight: bold;
-    display: block;            /* Hace que todo el cuadro de la celda sea cliqueable */
-    line-height: 50px;         /* Alinea el texto al centro del botón */
+    font-size: 14px;           /* Letra un poco más pequeña para que quepa bien todo */
+    display: block;            
+    padding: 0 10px;           /* Margen interno a los lados del texto */
+    line-height: 40px;         
+    white-space: nowrap;       /* Evita que el texto se parta en dos renglones */
 }
 
-/* El efecto visual cuando pasas el mouse por encima de la celda */
+/* Efecto al pasar el cursor */
 .tabla-menu td:hover {
+    background-color: #0AAAF7; /* Tu azul brillante */
+}
     background-color: #0AAAF7; /* Cambia al azul brillante */
 }
