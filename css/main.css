@@ -4,12 +4,12 @@ text-align:center;
 }
 
 h1{
-color:RGB(120, 120, 250);
+color:8888F7;
 font-size:60px;
 }
 
 p{
-color:RGB(120, 120, 250);
+color:8888F7;
 }
 
 img{
@@ -33,5 +33,5 @@ menu a {
 }
 
 menu a:hover {
-    background-color:RGB(0, 170, 255); 
+    background-color:0AAAF7; 
 }
