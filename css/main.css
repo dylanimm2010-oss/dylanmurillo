@@ -1,15 +1,15 @@
 body{
-background-color: purple;
+background-color:FAFAD4;
 text-align:center;
 }
 
 h1{
-color:yellow;
+color:D4E7FA;
 font-size:60px;
 }
 
 p{
-color:yellow;
+color:D4E7FA;
 }
 
 img{
@@ -17,7 +17,7 @@ width:400px;
 height:400px;
 }
 .menu {
-    background-color: #003366;
+    background-color:003366;
     padding: 15px;
     text-align: center;
     border-radius: 10px;
@@ -33,5 +33,5 @@ height:400px;
 }
 
 .menu a:hover {
-    background-color: #00aaff;
+    background-color:00AAFF;
 }
