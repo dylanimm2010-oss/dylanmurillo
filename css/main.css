@@ -1,7 +1,7 @@
 body {
     background-color: #FAFAD4;
-    text-align: center;
     font-family: Arial, sans-serif;
+    padding: 20px; /* Le da un margen interno a toda la página para que el texto no pegue con los bordes */
 }
 
 h1 {
