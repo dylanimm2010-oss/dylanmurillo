@@ -44,12 +44,12 @@
     <p>Gira el modelo con el ratón o el dedo para verlo desde todos los ángulos.</p>
     
     <div class="contenedor-3d">
-        <model-viewer src="../3d/3dapolo1.stl" alt="Modelo 3D de pieza de robótica" auto-rotate camera-controls shadow-intensity="1" class="visor-3d"></model-viewer>
+        <model-viewer src="../3d/3dapolo1.glb" alt="Modelo 3D de pieza de robótica" auto-rotate camera-controls shadow-intensity="1" class="visor-3d"></model-viewer>
     </div>
     <a href="../3d/3dapolo1.stl" download class="btn-descarga">Descargar archivo .STL para impresión</a>
     <br><br>
      <div class="contenedor-3d">
-        <model-viewer src="../3d/3dapolo3.stl" alt="Modelo 3D de pieza de robótica" auto-rotate camera-controls shadow-intensity="1" class="visor-3d"></model-viewer>
+        <model-viewer src="../3d/3dapolo3.glb" alt="Modelo 3D de pieza de robótica" auto-rotate camera-controls shadow-intensity="1" class="visor-3d"></model-viewer>
     </div>
      <a href="../3d/3dapolo3.stl" download class="btn-descarga">Descargar archivo .STL para impresión</a>
 
@@ -61,22 +61,407 @@
     
     <div class="caja-codigo">
 <pre><code>
-# Ejemplo de código para tu portafolio
+import ssl
+import socketpool
+import wifi
+import adafruit_minimqtt.adafruit_minimqtt as MQTT
+from adafruit_io.adafruit_io import IO_MQTT
+from random import randint  
+from ideaboard import IdeaBoard
 import time
+import board
+import adafruit_dht
+import digitalio
+import pwmio
 
-def iniciar_robot():
-    print("Iniciando sistemas de Apolo...")
-    time.sleep(1)
-    print("Sensores en línea.")
-    print("Listo para seguimiento.")
+ib = IdeaBoard()
 
-iniciar_robot()
+# Configuración de pines de entrada y salida
+switch = digitalio.DigitalInOut(board.IO27)
+switch.direction = digitalio.Direction.INPUT
+switch.pull = digitalio.Pull.DOWN
+
+ir_izquierdo = digitalio.DigitalInOut(board.IO32)
+ir_izquierdo.direction = digitalio.Direction.INPUT
+
+ir_derecho = digitalio.DigitalInOut(board.IO33)
+ir_derecho.direction = digitalio.Direction.INPUT
+
+sensor_clima = None
+try:
+    sensor_clima = adafruit_dht.DHT22(board.IO26)
+except Exception:
+    print("Aviso: No se detectó el DHT22.")
+
+parlante = pwmio.PWMOut(board.IO25, variable_frequency=True)
+
+def tocar_nota(frecuencia, duracion):
+    if frecuencia == 0:
+        parlante.duty_cycle = 0
+    else:
+        parlante.frequency = frecuencia  
+        parlante.duty_cycle = 32768
+    time.sleep(duracion)
+    parlante.duty_cycle = 0
+    time.sleep(0.03)
+
+# Conexión red WiFi
+try:
+    from secrets import secrets
+except ImportError:
+    print("WiFi secrets are kept in secrets.py!")
+    raise
+
+print("Connecting to %s" % secrets["ssid"])
+wifi.radio.connect(secrets["ssid"], secrets["password"])
+print("Connected to %s!" % secrets["ssid"])
+
+aio_username = secrets["aio_username"]
+aio_key = secrets["aio_key"]
+
+# Configuración de Adafruit IO
+def connected(client):
+    print("Connected to Adafruit IO!")
+    client.subscribe("temp")
+    client.subscribe("humid")
+    client.subscribe("switch-virtual")
+    client.subscribe("estado")
+    client.subscribe("ENCENDIDO")
+
+def disconnected(client):
+    print("Disconnected from Adafruit IO!")
+
+def message(client, feed_id, payload):
+    pass
+
+pool = socketpool.SocketPool(wifi.radio)
+mqtt_client = MQTT.MQTT(
+    broker="io.adafruit.com",
+    port=1883,
+    username=secrets["aio_username"],
+    password=secrets["aio_key"],
+    socket_pool=pool,
+    ssl_context=ssl.create_default_context(),
+)
+
+io = IO_MQTT(mqtt_client)
+io.on_connect = connected
+io.on_disconnect = disconnected
+io.on_message = message
+
+print("Connecting to Adafruit IO...")
+io.connect()
+
+# Melodía de inicio
+print("--- Tocando Melodía de Inicio ---")
+tocar_nota(523, 0.15)  # Do
+tocar_nota(659, 0.15)  # Mi
+tocar_nota(784, 0.15)  # Sol
+tocar_nota(1047, 0.5)  # Do Alto
+print("--- Fin de la melodía ---")
+
+# Variables de control
+cronometro_clima = 0
+ultimo_texto_enviado = ""
+ultimo_switch_enviado = -1
+
+# Variables globales para el diagnóstico del clima
+diagnostico_temp = "Desconocido"
+diagnostico_hum = "Desconocido"
+
+print("Sistema listo.")
+
+while True:
+    try:
+        io.loop()
+    except Exception:
+        try:
+            io.connect()
+        except Exception:
+            pass
+
+    # Lógica de movimiento y sonido
+    movimiento = "Detenido"
+    
+    if switch.value:
+        lectura_izq = ir_izquierdo.value
+        lectura_der = ir_derecho.value
+        
+        if lectura_izq == lectura_der:
+            movimiento = "Avanzando Recto"
+            ib.motor_1.throttle = 0.5
+            ib.motor_2.throttle = 0.5
+           
+            tocar_nota(523, 0.05)  
+            tocar_nota(659, 0.05)  
+            tocar_nota(784, 0.05)  
+            tocar_nota(659, 0.05)  
+        elif lectura_izq == True and lectura_der == False:
+            movimiento = "Girando Izquierda"
+            ib.motor_1.throttle = 0.5
+            ib.motor_2.throttle = 0.0
+            
+            tocar_nota(698, 0.08)  
+            tocar_nota(587, 0.08)  
+        elif lectura_izq == False and lectura_der == True:
+            movimiento = "Girando Derecha"
+            ib.motor_1.throttle = 0.0
+            ib.motor_2.throttle = 0.5
+            
+            tocar_nota(587, 0.08)  
+            tocar_nota(698, 0.08)  
+    else:
+        # Acción inmediata al chocar: Retroceder durante medio segundo
+        movimiento = "Retrocediendo por Obstaculo"
+        print("--- Colision Detectada: Retrocediendo ---")
+        
+        # Motores hacia atrás
+        ib.motor_1.throttle = -0.5
+        ib.motor_2.throttle = -0.5
+        
+        # Pitido rápido de alerta mientras va hacia atrás
+        tocar_nota(880, 0.1)   
+        time.sleep(0.05)       
+        tocar_nota(880, 0.1)   
+        time.sleep(0.25)  # Completa el tiempo de retroceso
+        
+        # Frenar por completo antes de volver a evaluar
+        ib.motor_1.throttle = 0.0
+        ib.motor_2.throttle = 0.0
+        movimiento = "Detenido por Switch"
+        time.sleep(0.5)
+
+    # Combinación de movimiento y estado del clima para el Dashboard
+    texto_estado_actual = f"{movimiento} | Clima: {diagnostico_temp} y {diagnostico_hum}"
+
+    # Transmisión inmediata por cambio de estado
+    try:
+        valor_sw_actual = 1 if switch.value else 0
+        if valor_sw_actual != ultimo_switch_enviado:
+            io.publish("switch-virtual", valor_sw_actual)
+            ultimo_switch_enviado = valor_sw_actual
+            print(f"Cambio Switch: {valor_sw_actual}")
+
+        if texto_estado_actual != ultimo_texto_enviado:
+            io.publish("estado", texto_estado_actual)
+            ultimo_texto_enviado = texto_estado_actual
+            print(f"Cambio Estado: {texto_estado_actual}")
+            
+    except Exception:
+        print("Error en transmisión rápida.")
+
+    # Lectura de clima y diagnóstico cada 12 segundos
+    tiempo_ahora = time.monotonic()
+    if (tiempo_ahora - cronometro_clima) >= 12:
+        try:
+            temp = None
+            hum = None
+            if sensor_clima is not None:
+                try:
+                    temp = sensor_clima.temperature
+                    hum = sensor_clima.humidity
+                except RuntimeError:
+                    pass
+
+            if temp is not None and hum is not None:
+                # Diagnóstico térmico
+                if temp < 18.0:
+                    diagnostico_temp = "Frio"
+                elif temp > 26.0:
+                    diagnostico_temp = "Caluroso"
+                else:
+                    diagnostico_temp = "Templado"
+
+                # Diagnóstico humedad
+                if hum < 40.0:
+                    diagnostico_hum = "Seco"
+                elif hum > 75.0:
+                    diagnostico_hum = "Humedo"
+                else:
+                    diagnostico_hum = "Normal"
+
+                print(f"Datos -> Temp: {temp}C ({diagnostico_temp}) | Hum: {hum}% ({diagnostico_hum})")
+                print(f"Ambiente: {diagnostico_temp} y {diagnostico_hum}")
+                
+                io.publish("temp", int(temp))
+                io.publish("humid", int(hum))
+                
+            io.publish("ENCENDIDO", randint(0, 100))
+        except Exception:
+            print("Error en lectura o envío periódico.")
+            
+        cronometro_clima = tiempo_ahora
+        
+    time.sleep(0.1)
 </code></pre>
     </div>
     
-    <a href="../codigo/script_apolo.py" download class="btn-descarga">Descargar script_apolo.py</a>
+    <a href="../code/apoloV2.py" download class="btn-descarga">Descargar apoloV2.py</a>
 
     <br><br>
+    <h2>Código Fuente (Python)</h2>
+    <p>Fragmento de código utilizado en mis proyectos de robótica e IA.</p>
+    
+    <div class="caja-codigo">
+<pre><code>
+import time
+import board
+import digitalio
+import adafruit_dht
+from ideaboard import IdeaBoard
 
+# ======== Sensores y actuadores locales ========
+dhtDevice = adafruit_dht.DHT11(board.IO26)
+
+relay = digitalio.DigitalInOut(board.IO25)
+relay.direction = digitalio.Direction.OUTPUT
+RELAY_ACTIVE_LOW = False
+
+def relay_on():
+    relay.value = False if RELAY_ACTIVE_LOW else True
+
+def relay_off():
+    relay.value = True if RELAY_ACTIVE_LOW else False
+
+ib = IdeaBoard()
+
+TEMP_TARGET = 37.5
+HUMIDITY_TARGET = 55.0
+
+MOTOR_ON_SECONDS = 60
+MOTOR_OFF_SECONDS = 300
+
+motor_last_change = time.monotonic()
+motor_running = True
+ib.motor_1.throttle = 1.0
+ib.motor_2.throttle = 1.0
+print("Motor arrancó girando")
+
+# ======== Adafruit IO ========
+import ssl
+import socketpool
+import wifi
+import adafruit_minimqtt.adafruit_minimqtt as MQTT
+from adafruit_io.adafruit_io import IO_MQTT
+
+try:
+    from secrets import secrets
+except ImportError:
+    print("WiFi secrets are kept in secrets.py, please add them there!")
+    raise
+
+print("Connecting to %s" % secrets["ssid"])
+wifi.radio.connect(secrets["ssid"], secrets["password"])
+print("Connected to %s!" % secrets["ssid"])
+
+pool = socketpool.SocketPool(wifi.radio)
+mqtt_client = MQTT.MQTT(
+    broker="io.adafruit.com",
+    port=1883,
+    username=secrets["aio_username"],
+    password=secrets["aio_key"],
+    socket_pool=pool,
+    ssl_context=ssl.create_default_context(),
+)
+io = IO_MQTT(mqtt_client)
+
+# Estados controlados por toggles
+motor_auto = True   # True = AUTO, False = apagado forzado
+relay_auto = True   # True = AUTO, False = apagado forzado
+
+def connected(client):
+    print("Conectado a Adafruit IO")
+    client.subscribe("motorcontrol")  # toggle ON=auto, OFF=off
+    client.subscribe("relaycontrol")  # toggle ON=auto, OFF=off
+
+def message(client, feed_id, payload):
+    global motor_auto, relay_auto
+    print("Mensaje de", feed_id, ":", payload)
+    # Toggle ON = AUTO, OFF = OFF
+    if feed_id == "motorcontrol":
+        motor_auto = (payload == "ON")
+    if feed_id == "relaycontrol":
+        relay_auto = (payload == "ON")
+
+io.on_connect = connected
+io.on_message = message
+io.connect()
+
+# ======== Bucle principal ========
+last_publish = 0
+
+while True:
+    io.loop()
+
+    # ---- Leer sensor DHT11 ----
+    try:
+        temp_c = dhtDevice.temperature
+        humidity = dhtDevice.humidity
+        print("Temperatura: {:.1f} °C   Humedad: {:.1f} %".format(temp_c, humidity))
+    except RuntimeError as error:
+        print("Error leyendo DHT11:", error.args[0])
+        time.sleep(2)
+        continue
+
+    # ---- Control relé ----
+    if relay_auto:
+        if (temp_c  TEMP_TARGET) or (humidity  HUMIDITY_TARGET):
+            relay_on()
+            print("Relé encendido (auto)")
+        else:
+            relay_off()
+            print("Relé apagado (auto)")
+    else:
+        relay_off()
+        print("Relé forzado OFF")
+
+    # ---- Control motor ----
+    now = time.monotonic()
+    if motor_auto:
+        if motor_running:
+            if now - motor_last_change >= MOTOR_ON_SECONDS:
+                ib.motor_1.throttle = 0
+                ib.motor_2.throttle = 0
+                motor_running = False
+                motor_last_change = now
+                print("Motor detenido")
+        else:
+            if now - motor_last_change >= MOTOR_OFF_SECONDS:
+                ib.motor_1.throttle = 1.0
+                ib.motor_2.throttle = 1.0
+                motor_running = True
+                motor_last_change = now
+                print("Motor girando")
+    else:
+        ib.motor_1.throttle = 0
+        ib.motor_2.throttle = 0
+        print("Motor forzado OFF")
+
+    # ---- Calcular tiempo restante y convertir a mm:ss ----
+    if motor_auto:
+        if motor_running:
+            time_left = MOTOR_ON_SECONDS - (now - motor_last_change)
+        else:
+            time_left = MOTOR_OFF_SECONDS - (now - motor_last_change)
+    else:
+        time_left = 0
+
+    minutes = int(time_left) // 60
+    seconds = int(time_left) % 60
+    time_str = f"{minutes}:{seconds:02d}"  # Formato "mm:ss"
+
+    # ---- Publicar a Adafruit IO cada 5 s ----
+    if (time.monotonic() - last_publish) > 5:
+        io.publish("temp", temp_c)
+        io.publish("humid", humidity)
+        io.publish("motortime", time_str)  # Formato mm:ss para Text Block
+        last_publish = time.monotonic()
+
+    time.sleep(2)
+</code></pre>
+    </div>
+    
+    <a href="../code/incubadora_adafruit.py" download class="btn-descarga">Descargar  incubadora_adafruit.py</a>
+    <br><br><br>
 </body>
 </html>
