@@ -28,7 +28,6 @@ tabla-menu {
     border-radius: 8px;
     width: 95%;                /* Ocupa casi todo el ancho de la pantalla */
 }
-
 /* Cada celda se comporta como una pestaña */
 .tabla-menu td {
     background-color: #1a4d80; /* Un azul un poco más claro para que resalten los botones */
